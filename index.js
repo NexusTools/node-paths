@@ -2,38 +2,47 @@ var _ = require('underscore');
 var path = require('path');
 var fs = require('fs');
 
-var $break = new Object();
-var paths = function(paths) {
-    try {
-        if(arguments.length > 1) {
-            this._paths = _.flatten(arguments);
-            try {
-                if(!_.isFunction(this._paths[0]))
-                    throw "Not a function";
-                this._resolve = this._paths.splice(0, 1)[0];
-            } catch(e) {}
-        } else if(_.isArray(paths))
-            this._paths = _.flatten(paths);
-        else if(_.isObject(paths)) {
-            if("_paths" in paths) {
-                this._paths = paths._paths;
-                this._resolve = paths._resolve || _.identity;
-                return;
-            } else if(_.isFunction(paths)) {
-                this._resolve = paths;
-                this._paths = [];
-                return;
-            } else
-                throw new Error("Cannot handle `" + Object.prototype.toString.apply(paths) + "`\n" + paths);
-        } else if(paths)
-            this._paths = ["" + paths];
-        else
-            this._paths = [];
+function _convertArg(arg) {
+    if(!_.isString(arg)) {
+        if(paths.isInstance(arg))
+            return arg._paths;
+        
+        throw new Error("Cannot handle type `" + (typeof arg) + "`");
+    } else
+        return path.normalize("" + arg);
+}
 
-            
-    } finally {
-        this._resolve = this._resolve || _.identity;
-    }
+function _cleanInput(args, convert) {
+    if(!args.length)
+        return [];
+    
+    convert = convert || _convertArg;
+    args = _.flatten(args);
+    
+    var output = [];
+    args.forEach(function(arg) {
+        if(arg = convert(arg)) {
+            if(!_.isArray(arg))
+                arg = [arg];
+            output = _.union(output, arg);
+        }
+    });
+    return output;
+}
+
+var $break = new Object();
+var paths = function() {
+    var resolve;
+    this._paths = _cleanInput(arguments, function(input) {
+        if(_.isFunction(input)) {
+            if(resolve)
+                throw new Error("Only one resolver is supported per instance.");
+           resolve = input;
+           return false;
+        } else
+           return _convertArg(input);
+    });
+    this._resolve = resolve || _.identity;
 };
 paths.isInstance = function(other) {
     try {
@@ -56,94 +65,52 @@ paths.prototype.count = function() {
 };
 paths.prototype.get = function(overrides) {
     var combinedPath;
-    if(overrides && overrides != ".") {
-        if(arguments.length > 1) {
-            var path = this;
-            Array.prototype.forEach.apply(arguments, [function(arg) {
-                path = path.get(arg);
-            }]);
-            return path;
-        } else if(_.isArray(overrides))
-            overrides = _.flatten(overrides);
-        else if(_.isObject(overrides)) {
-            if(paths.isInstance(overrides)) {
-                if(overrides == this)
-                    return this;
-                overrides = overrides._paths;
-            } else
-                throw new Error("Cannot handle `" + Object.prototype.toString.apply(overrides) + "`\n" + overrides);
-        } else
-            overrides = ("" + overrides).split(":");
-        return new paths(this._resolve, _.union(overrides, this._paths));
-    }
+    var overrides = _cleanInput(arguments);
+    if(overrides.length > 0)
+        return new paths(this.resolve, _.union(overrides, this._paths));
     return this;
 };
 paths.prototype.clear = function() {
     this._paths = [];
 };
-paths.prototype.add = function(newpath) {
-    if(arguments.length > 1) {
-        var self = this;
-        Array.prototype.forEach.apply(arguments, [function(arg) {
-            self.add(arg);
-        }]);
-        return;
-    } else if(_.isArray(newpath)) {
-        if(newpath.length < 1)
-            return;
-        newpath = _.flatten(newpath);
-    } else if(_.isObject(newpath)) {
-        if(paths.isInstance(newpath)) {
-            if(newpath == this)
-                return this;
-            newpath = newpath._paths;
-        } else
-            throw new Error("Cannot handle `" + Object.prototype.toString.apply(newpath) + "`\n" + newpath);
-    } else if(newpath) {
-        newpath = ["" + newpath];
-        if(this.has(newpath[0]))
-            return;
-    } else
-        return;
-    this._paths = _.union(newpath, this._paths);
+paths.prototype.add = function() {
+    var add = _cleanInput(arguments);
+    if(add.length)
+        this._paths = _.union(add, this._paths);
 };
-paths.prototype.has = function(cpath) {
-    return this._paths.indexOf(cpath + "") != -1;
+paths.prototype.has = function() {
+        
+    try {
+        var find = _cleanInput(arguments);
+        if(find.length > 0) {
+            var self = this;
+            find.forEach(function(thing) {
+                if(self._paths.indexOf(thing) == -1)
+                    throw $break;
+            });
+            return true;
+        }
+    } catch(e) {
+        if(e != $break)
+            throw e;
+    }
+    return false;
 };
 paths.prototype.remove = function(cpath) {
-    if(arguments.length > 1) {
-        var self = this;
-        Array.prototype.forEach.apply(arguments, [function(arg) {
-            self.remove(arg);
-        }]);
-        return;
-    } else if(_.isArray(cpath))
-        cpath = _.flatten(cpath);
-    else if(_.isObject(cpath)) {
-        if(paths.isInstance(cpath)) {
-            if(this === cpath) {
-                this._paths = []
-                return;
-            }
-            cpath = cpath._paths;
-        } else
-            throw new Error("Cannot handle `" + Object.prototype.toString.apply(cpath) + "`\n" + cpath);
-    } else {
-        cpath = ["" + cpath];
-        if(!this.has(cpath[0]))
-            return;
-    }
-    this._paths = _.without(this._paths, cpath);
+    var remove = _cleanInput(arguments);
+    if(remove.length > 0)
+        this._paths = _.difference(this._paths, remove);
 };
 paths.prototype.forEach = function(iterator) {
     this._paths.forEach(iterator);
 };
 paths.prototype.resolve = function(resolver, _paths, lookDeep) {
-    if(_.isArray(_paths) || _.isObject(_paths))
-        _paths = this._paths.get(_paths);
-    else if(_paths)
-        _paths = this._paths.get(("" + _paths).split(":"));
-    else
+    if(_paths) {
+        if(_.isString(_paths))
+            _paths = this.get(_paths.split(":"));
+        else
+            _paths = this.get(_paths);
+    } else
         _paths = this._paths;
     
     if(!_.isFunction(resolver)) {
@@ -158,6 +125,17 @@ paths.prototype.resolve = function(resolver, _paths, lookDeep) {
         
     var resolved;
     try {
+        var lookIn = function(_paths) {
+            
+            _paths.forEach(function(_path) {
+                var resolvedPath = resolver(_path);
+                if(fs.existsSync(resolvedPath)) {
+                    resolved = resolvedPath;
+                    throw $break;
+                }
+            });
+        };
+        
         if(lookDeep)
             _paths.forEach(function(_path) {
                 var files;
@@ -166,23 +144,12 @@ paths.prototype.resolve = function(resolver, _paths, lookDeep) {
                 } catch(e) {
                     return;
                 }
-                files.forEach(function(child) {
-                    var childPath = path.resolve(_path, child);
-                    var resolvedPath = resolver(childPath);
-                    if(fs.existsSync(resolvedPath)) {
-                        resolved = resolvedPath;
-                        throw $break;
-                    }
-                });
+                for(var i=0;i<files.length;i++)
+                    files[i] = path.resolve(_path, files[i]);
+                lookIn(files);
             });
         else
-            _paths.forEach(function(_path) {
-                var resolvedPath = resolver(_path);
-                if(fs.existsSync(resolvedPath)) {
-                    resolved = resolvedPath;
-                    throw $break;
-                }
-            });
+            lookIn(_paths);
     } catch(e) {
         if(e !== $break)
             throw e;
@@ -192,6 +159,6 @@ paths.prototype.resolve = function(resolver, _paths, lookDeep) {
     return resolved;
 };
 paths.prototype.toString = function() {
-    return JSON.stringify(this);
+    return JSON.stringify(this._paths);
 }
 module.exports = paths;
