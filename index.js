@@ -103,7 +103,9 @@ paths.prototype.remove = function(cpath) {
 paths.prototype.forEach = function(iterator) {
     this._paths.forEach(iterator);
 };
-
+paths.prototype.resolveAsync = function(resolver, callback, _paths, lookDeep) {
+    throw new Error("Not implemented yet");
+}
 paths.prototype.resolve = function(resolver, _paths, lookDeep) {
     if(_paths) {
         if(_.isString(_paths))

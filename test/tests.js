@@ -194,10 +194,10 @@ describe('api', function() {
             assert.equal(instance.resolve("package.json"),
                          path.resolve(topDir, "package.json"),
                         instance);
-            instance.add(supportDir);
-            assert.equal(instance.resolve("env"),
+            assert.equal(instance.resolve("env", supportDir),
                          path.resolve(supportDir, "env.js"),
                         instance);
+            instance.add(supportDir);
             assert.equal(instance.resolve("env.js"),
                          path.resolve(supportDir, "env.js"),
                         instance);
@@ -221,12 +221,30 @@ describe('api', function() {
                 if(!/Cannot resolve `manson` /.test(e.message))
                     throw e;
             }
-            assert.equal(instance.resolve("env", __dirname, true),
+            assert.equal((new paths()).resolve("env.js", ["not-there", __dirname], true),
                          path.resolve(supportDir, "env.js"),
                         instance);
         });
-        
-        
+        it('resolveAsync (-NotImplemented)', function(){
+            try {
+                instance.resolveAsync("death");
+                throw new Error("Didn't fail");
+            } catch(e) {
+                if(!/Not implemented yet/.test(e.message))
+                    throw e;
+            }
+        });
+        it('contaminate _paths', function(){
+            instance._paths.push(new Date());
+            try {
+                instance.resolve("env");
+            } catch(e) {
+                if(!/Arguments to path.resolve must be strings/.test(e.message))
+                    throw e;
+            }
+        });
+        it('verify resolve order');
     });
+        
 
 });
