@@ -30,7 +30,7 @@ function _cleanInput(args, convert) {
     return output;
 }
 
-var $break = new Object();
+var $break = {_break:true};
 var paths = function() {
     var resolve;
     this._paths = _cleanInput(arguments, function(input) {
@@ -79,7 +79,6 @@ paths.prototype.add = function() {
         this._paths = _.union(add, this._paths);
 };
 paths.prototype.has = function() {
-        
     try {
         var find = _cleanInput(arguments);
         if(find.length > 0) {
@@ -91,7 +90,7 @@ paths.prototype.has = function() {
             return true;
         }
     } catch(e) {
-        if(e != $break)
+        if(e !== $break)
             throw e;
     }
     return false;
@@ -104,6 +103,7 @@ paths.prototype.remove = function(cpath) {
 paths.prototype.forEach = function(iterator) {
     this._paths.forEach(iterator);
 };
+
 paths.prototype.resolve = function(resolver, _paths, lookDeep) {
     if(_paths) {
         if(_.isString(_paths))
@@ -113,10 +113,17 @@ paths.prototype.resolve = function(resolver, _paths, lookDeep) {
     } else
         _paths = this._paths;
     
+    var $next = {_next:true};
+    var next = function() {
+        throw $next;
+    }
     if(!_.isFunction(resolver)) {
         var childString = this._resolve(path.normalize("" + resolver));
-        resolver = function(_path) {
-            return path.resolve(_path, childString);
+        resolver = function(_path, next) {
+            var resolved = path.resolve(_path, childString);
+            if(!fs.existsSync(resolved))
+                next();
+            return resolved;
         };
         resolver.toString = function() {
             return childString;
@@ -126,12 +133,13 @@ paths.prototype.resolve = function(resolver, _paths, lookDeep) {
     var resolved;
     try {
         var lookIn = function(_paths) {
-            
             _paths.forEach(function(_path) {
-                var resolvedPath = resolver(_path);
-                if(fs.existsSync(resolvedPath)) {
-                    resolved = resolvedPath;
-                    throw $break;
+                try {
+                    resolved = resolver(_path, next);
+                    return;
+                } catch(e) {
+                    if(e !== $next)
+                        throw e;
                 }
             });
         };

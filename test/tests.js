@@ -209,15 +209,14 @@ describe('api', function() {
                     throw e;
             }
             try {
-                var resolver = function() {
-                    return "nothing here";
+                var resolver = function(_path, next) {
+                    next();
                 };
                 resolver.toString = function() {
                     return "manson";
                 };
                 
                 instance.resolve(resolver, instance);
-                throw new Error("Didn't fail");
             } catch(e) {
                 if(!/Cannot resolve `manson` /.test(e.message))
                     throw e;
