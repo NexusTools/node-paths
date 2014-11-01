@@ -5,13 +5,13 @@ var path = require('path');
 var pkg;
 var topDir = path.dirname(__dirname);
 var supportDir = path.resolve(__dirname, "support");
+var pkgfile = path.resolve(topDir, "package.json");
 it('parse package.json', function(){
-    var pkgfile = path.resolve(topDir, "package.json");
     pkg = require(pkgfile);
     if(!pkg)
-        throw new Error("Failed to parse `" + rel + "`");
+        throw new Error("Failed to parse `package.json`");
     if(!("main" in pkg))
-        throw new Error("`" + rel + "` missing property `main`");
+        throw new Error("`package.json` missing property `main`");
 });
 var paths;
 it("require main", function(){
@@ -25,14 +25,12 @@ describe('api', function() {
         });
         it('using multiple args', function(){
             var test = new paths(__dirname, topDir);
-            assert.equal(test.resolve("package.json"),
-                         path.resolve(topDir, "package.json"));
+            assert.equal(test.resolve("package.json"), pkgfile);
             assert.equal(test.resolve("tests.js"), __filename);
         });
         it('using array arg', function(){
             var test = new paths([__dirname, topDir]);
-            assert.equal(test.resolve("package.json"),
-                         path.resolve(topDir, "package.json"));
+            assert.equal(test.resolve("package.json"), pkgfile);
             assert.equal(test.resolve("tests.js"), __filename);
         });
         it('using function arg', function(){
@@ -40,18 +38,15 @@ describe('api', function() {
                 return script + ".json";
             });
             test.add([__dirname, topDir]);
-            assert.equal(test.resolve("package"),
-                         path.resolve(topDir, "package.json"));
+            assert.equal(test.resolve("package"), pkgfile);
         });
         it('string arg', function(){
             instance = new paths(topDir);
-            assert.equal(instance.resolve("package.json"),
-                         path.resolve(topDir, "package.json"));
+            assert.equal(instance.resolve("package.json"), pkgfile);
         });
         it('paths arg', function(){
             instance = new paths(instance);
-            assert.equal(instance.resolve("package.json"),
-                         path.resolve(topDir, "package.json"));
+            assert.equal(instance.resolve("package.json"), pkgfile);
         });
         it('unknown type error', function(){
             try {
@@ -162,8 +157,7 @@ describe('api', function() {
         it('resolve', function(){
             instance.add(topDir);
             assert.equal(instance.resolve("package.json"),
-                         path.resolve(topDir, "package.json"),
-                        instance);
+                            pkgfile, instance);
             instance.add(supportDir);
             assert.equal(instance.resolve("env.js"),
                          path.resolve(supportDir, "env.js"),
@@ -192,8 +186,7 @@ describe('api', function() {
         it('resolve with resolvers', function(){
             instance.add(topDir);
             assert.equal(instance.resolve("package.json"),
-                         path.resolve(topDir, "package.json"),
-                        instance);
+                                        pkgfile, instance);
             assert.equal(instance.resolve("env", supportDir),
                          path.resolve(supportDir, "env.js"),
                         instance);
@@ -221,9 +214,9 @@ describe('api', function() {
                 if(!/Cannot resolve `manson` /.test(e.message))
                     throw e;
             }
-            assert.equal((new paths()).resolve("env.js", ["not-there", __dirname], true),
-                         path.resolve(supportDir, "env.js"),
-                        instance);
+            assert.equal((new paths()).resolve("env.js",
+                            ["not-there", __dirname], true),
+                         path.resolve(supportDir, "env.js"), instance);
         });
         it('resolveAsync (-NotImplemented)', function(){
             try {
