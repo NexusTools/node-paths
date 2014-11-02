@@ -2,6 +2,24 @@ var _ = require('underscore');
 var path = require('path');
 var fs = require('fs');
 
+function syspath(env) {
+    return function() {
+        var _path;
+        if(env in process.env)
+            path = new paths(process.env[env].split(path.delimiter));
+        else
+            path = [];
+        var err = function() {
+            throw new Error("Cannot modify built-in paths, use .get() to create a new copy.");
+        };
+        _path.add = err;
+        _path.remove = err;
+        return (paths.path = function() {
+            return _path;
+        })();
+    };
+}
+
 var $break = {_break:true};
 var paths = function() {
     var resolve;
@@ -22,8 +40,13 @@ paths._convert = function(arg) {
             return arg._paths;
         
         throw new Error("Cannot handle type `" + (typeof arg) + "`");
-    } else
-        return path.normalize("" + arg);
+    } else {
+        var converted = [];
+        arg.split(path.delimiter).forEach(function(_path) {
+            converted.push(path.normalize("" + _path));
+        });
+        return converted;
+    }
 }
 paths._convertArgs = function(args, convert) {
     if(!args.length)
@@ -33,11 +56,8 @@ paths._convertArgs = function(args, convert) {
     
     var output = [];
     args.forEach(function(arg) {
-        if(arg = convert(arg)) {
-            if(!_.isArray(arg))
-                arg = [arg];
+        if(arg = convert(arg))
             output = _.union(output, arg);
-        }
     });
     return output;
 }
@@ -53,7 +73,10 @@ paths.wrap = function(other) {
     if(paths.isInstance(other))
         return other;
     return new paths(Array.prototype.slice.call(arguments, 0));
-}
+};
+paths.path = syspath("PATH");
+paths.nodepath = syspath("NODE_PATH");
+paths.pluginpath = syspath("PLUGIN_PATH");
 paths.prototype.at = function(pos) {
     return this._paths[pos];
 };
@@ -104,12 +127,9 @@ paths.prototype.resolveAsync = function(resolver, callback, _paths, lookDeep) {
     throw new Error("Not implemented yet");
 }
 paths.prototype.resolve = function(resolver, _paths, lookDeep) {
-    if(_paths) {
-        if(_.isString(_paths))
-            _paths = this.get(_paths.split(":"));
-        else
-            _paths = this.get(_paths);
-    } else
+    if(_paths)
+        _paths = this.get(_paths);
+    else
         _paths = this;
     
     var $next = {_next:true};

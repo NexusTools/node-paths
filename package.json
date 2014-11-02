@@ -2,7 +2,7 @@
 	"name": "node-paths",
 	"author": "NexusTools",
 	"homepage": "https://www.nexustools.net/projects#node-paths",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"licenses": [
 		{
 			"type": "Apache License 2.0",
