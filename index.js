@@ -2,24 +2,6 @@ var _ = require('underscore');
 var path = require('path');
 var fs = require('fs');
 
-function syspath(env) {
-    return function() {
-        var _path;
-        if(env in process.env)
-            path = new paths(process.env[env].split(path.delimiter));
-        else
-            path = [];
-        var err = function() {
-            throw new Error("Cannot modify built-in paths, use .get() to create a new copy.");
-        };
-        _path.add = err;
-        _path.remove = err;
-        return (paths.path = function() {
-            return _path;
-        })();
-    };
-}
-
 var $break = {_break:true};
 var paths = function() {
     var resolve;
@@ -34,6 +16,41 @@ var paths = function() {
     });
     this._resolve = resolve || _.identity;
 };
+paths.sys = {
+    _init: function(env, alias) {
+        var _paths = undefined;
+        alias = alias || env.toLowerCase().replace(/[^a-zA-Z]/, "");
+        Object.defineProperty(paths.sys, alias, {
+            configurable: true,
+            get: function() {
+                if(!_paths) {
+                    if(env in process.env)
+                        _paths = new paths(process.env[env].split(path.delimiter));
+                    else
+                        _paths = new paths();
+                    var err = function() {
+                        throw new Error("Cannot modify built-in paths, use .clone() to create a new copy.");
+                    };
+                    _paths.add = err;
+                    _paths.remove = err;
+                    
+                    Object.defineProperty(paths.sys, alias, {
+                        get: function() {
+                            return _paths;
+                        }
+                    });
+                }
+                
+                return _paths;
+                
+            }
+        });
+    }
+};
+paths.sys._init("PATH", "path");
+paths.sys._init("NODE_PATH", "node");
+paths.sys._init("PLUGIN_PATH", "plugin");
+
 paths._convert = function(arg) {
     if(!_.isString(arg)) {
         if(paths.isInstance(arg))
@@ -74,9 +91,6 @@ paths.wrap = function(other) {
         return other;
     return new paths(Array.prototype.slice.call(arguments, 0));
 };
-paths.path = syspath("PATH");
-paths.nodepath = syspath("NODE_PATH");
-paths.pluginpath = syspath("PLUGIN_PATH");
 paths.prototype.at = function(pos) {
     return this._paths[pos];
 };
@@ -119,6 +133,11 @@ paths.prototype.remove = function(cpath) {
     var remove = paths._convertArgs(arguments);
     if(remove.length > 0)
         this._paths = _.difference(this._paths, remove);
+};
+paths.prototype.clone = function() {
+    var _paths = new paths();
+    _paths._paths = this._paths;
+    return _paths;
 };
 paths.prototype.forEach = function(iterator) {
     this._paths.forEach(iterator);
