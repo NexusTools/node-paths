@@ -190,8 +190,11 @@ describe('api', function() {
             assert.equal(instance.resolve("env", supportDir),
                          path.resolve(supportDir, "env.js"),
                         instance);
+            assert.equal(instance.get(supportDir).resolve("env"),
+                         path.resolve(supportDir, "env.js"),
+                        instance);
             instance.add(supportDir);
-            assert.equal(instance.resolve("env.js"),
+            assert.equal(instance.resolve("env"),
                          path.resolve(supportDir, "env.js"),
                         instance);
             try {

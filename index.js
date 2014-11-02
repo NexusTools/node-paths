@@ -2,7 +2,21 @@ var _ = require('underscore');
 var path = require('path');
 var fs = require('fs');
 
-function _convertArg(arg) {
+var $break = {_break:true};
+var paths = function() {
+    var resolve;
+    this._paths = paths._convertArgs(arguments, function(input) {
+        if(_.isFunction(input)) {
+            if(resolve)
+                throw new Error("Only one resolver is supported per instance.");
+           resolve = input;
+           return false;
+        } else
+           return paths._convert(input);
+    });
+    this._resolve = resolve || _.identity;
+};
+paths._convert = function(arg) {
     if(!_.isString(arg)) {
         if(paths.isInstance(arg))
             return arg._paths;
@@ -11,12 +25,10 @@ function _convertArg(arg) {
     } else
         return path.normalize("" + arg);
 }
-
-function _cleanInput(args, convert) {
+paths._convertArgs = function(args, convert) {
     if(!args.length)
         return [];
-    
-    convert = convert || _convertArg;
+    convert = convert || paths._convert;
     args = _.flatten(args);
     
     var output = [];
@@ -29,21 +41,6 @@ function _cleanInput(args, convert) {
     });
     return output;
 }
-
-var $break = {_break:true};
-var paths = function() {
-    var resolve;
-    this._paths = _cleanInput(arguments, function(input) {
-        if(_.isFunction(input)) {
-            if(resolve)
-                throw new Error("Only one resolver is supported per instance.");
-           resolve = input;
-           return false;
-        } else
-           return _convertArg(input);
-    });
-    this._resolve = resolve || _.identity;
-};
 paths.isInstance = function(other) {
     try {
         if(!_.isArray(other._paths))
@@ -65,22 +62,22 @@ paths.prototype.count = function() {
 };
 paths.prototype.get = function(overrides) {
     var combinedPath;
-    var overrides = _cleanInput(arguments);
+    var overrides = paths._convertArgs(arguments);
     if(overrides.length > 0)
-        return new paths(this.resolve, _.union(overrides, this._paths));
+        return new paths(this._resolve, _.union(overrides, this._paths));
     return this;
 };
 paths.prototype.clear = function() {
     this._paths = [];
 };
 paths.prototype.add = function() {
-    var add = _cleanInput(arguments);
+    var add = paths._convertArgs(arguments);
     if(add.length)
         this._paths = _.union(add, this._paths);
 };
 paths.prototype.has = function() {
     try {
-        var find = _cleanInput(arguments);
+        var find = paths._convertArgs(arguments);
         if(find.length > 0) {
             var self = this;
             find.forEach(function(thing) {
@@ -96,7 +93,7 @@ paths.prototype.has = function() {
     return false;
 };
 paths.prototype.remove = function(cpath) {
-    var remove = _cleanInput(arguments);
+    var remove = paths._convertArgs(arguments);
     if(remove.length > 0)
         this._paths = _.difference(this._paths, remove);
 };
@@ -113,7 +110,7 @@ paths.prototype.resolve = function(resolver, _paths, lookDeep) {
         else
             _paths = this.get(_paths);
     } else
-        _paths = this._paths;
+        _paths = this;
     
     var $next = {_next:true};
     var next = function() {
@@ -122,16 +119,16 @@ paths.prototype.resolve = function(resolver, _paths, lookDeep) {
     if(!_.isFunction(resolver)) {
         var childString = this._resolve(path.normalize("" + resolver));
         resolver = function(_path, next) {
-            var resolved = path.resolve(_path, childString);
-            if(!fs.existsSync(resolved))
+            _path = path.resolve(_path, childString);
+            if(!fs.existsSync(_path))
                 next();
-            return resolved;
+            return _path;
         };
         resolver.toString = function() {
             return childString;
         };
     }
-        
+    
     var resolved;
     try {
         var lookIn = function(_paths) {
