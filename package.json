@@ -2,7 +2,7 @@
 	"name": "node-paths",
 	"author": "NexusTools",
 	"homepage": "https://www.nexustools.net/projects#node-paths",
-	"version": "0.1.7",
+	"version": "0.1.8",
 	"licenses": [
 		{
 			"type": "Apache License 2.0",
@@ -34,7 +34,7 @@
 		"node" : ">=1.0.0" 
 	},
 	"dependencies": {
-		"underscore": "latest"
+		"lodash": "latest"
 	},
 	"devDependencies": {
 		"istanbul": "0.3.2",
