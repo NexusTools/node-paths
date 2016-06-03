@@ -163,6 +163,20 @@ describe('api', function() {
                          path.resolve(supportDir, "env.js"),
                         instance);
         });
+        it('resolveAsync', function(cb){
+            instance.resolveAsync("env.js", function(err, resolved) {
+                if(err) return cb(err);
+                if(!resolved) return cb(new Error("env could be resolved"));
+                cb();
+            });
+        });
+        it('resolveAsync lookDeep', function(cb){
+            instance.resolveAsync("tests.js", function(err, resolved) {
+                if(err) return cb(err);
+                if(!resolved) return cb(new Error("env could be resolved"));
+                cb();
+            }, null, true);
+        });
         it('resolver function', function(){
             instance = new paths(function(input) {
                 if(!/\.\w{2,5}$/.test(input))
@@ -205,9 +219,7 @@ describe('api', function() {
                     throw e;
             }
             try {
-                var resolver = function(_path, next) {
-                    next();
-                };
+                var resolver = function(_path) {return "";};
                 resolver.toString = function() {
                     return "manson";
                 };
@@ -221,21 +233,12 @@ describe('api', function() {
                             ["not-there", __dirname], true),
                          path.resolve(supportDir, "env.js"), instance);
         });
-        it('resolveAsync (-NotImplemented)', function(){
-            try {
-                instance.resolveAsync("death");
-                throw new Error("Didn't fail");
-            } catch(e) {
-                if(!/Not implemented yet/.test(e.message))
-                    throw e;
-            }
-        });
         it('contaminate _paths', function(){
             instance._paths.push(new Date());
             try {
                 instance.resolve("env");
             } catch(e) {
-                if(!/Arguments to path.resolve must be strings/.test(e.message))
+                if(!/^Path must be a string\./.test(e.message))
                     throw e;
             }
         });
