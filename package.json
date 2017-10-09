@@ -1,8 +1,13 @@
 {
     "name": "node-paths",
-    "author": "NexusTools",
-    "homepage": "https://www.nexustools.net/projects#node-paths",
-    "version": "0.2.0",
+    "author": "NexusTools <contact@nexustools.com>",
+    "contributors": [
+        {
+            "name": "Katelyn Slater",
+            "email": "ktaeyln@gmail.com"
+        }
+    ],
+    "version": "0.2.1",
     "licenses": [
         {
             "type": "Apache License 2.0",
@@ -39,6 +44,9 @@
         "lodash": "^4.13.1"
     },
     "devDependencies": {
+        "@types/async": "^2.0.44",
+        "@types/lodash": "^4.14.77",
+        "@types/node": "^8.0.33",
         "istanbul": "^0.4.3",
         "mocha": "^2.5.3"
     }
