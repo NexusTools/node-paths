@@ -188,7 +188,7 @@ describe('instance methods', function () {
             instance.resolve("env");
         }
         catch (e) {
-            if (!/^Path must be a string\./.test(e.message))
+            if (!/^(Arguments to path.resolve must be strings|Path must be a string)\./.test(e.message))
                 throw e;
         }
     });
