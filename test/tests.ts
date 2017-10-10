@@ -2,8 +2,8 @@ import assert = require('assert');
 import paths = require("../index");
 import path = require('path');
 
-declare function it(stage: string, impl: Function);
-declare function describe(stage: string, impl: Function);
+declare function it(stage: string, impl: Function): void;
+declare function describe(stage: string, impl: Function): void;
 
 const a = path.resolve(__dirname, "a");
 const b = path.resolve(__dirname, "b");

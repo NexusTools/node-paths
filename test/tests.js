@@ -57,6 +57,8 @@ describe('instance methods', function () {
             throw new Error("Contains no paths");
         var cPaths = instance.get(__dirname);
         assert.equal(cPaths.at(0), __dirname);
+        //assert.equal(instance.get(cPaths, topDir).count(), 2);
+        //assert.equal(instance.get([__dirname, supportDir]).count(), 3);
         assert.equal(instance.get(), instance);
         instance.clear();
         assert.equal(instance.count(), 0);
