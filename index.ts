@@ -24,26 +24,44 @@ class Paths {
         this._paths = Paths._convertArgs(remain);
         this._resolve = resolve || _.identity;
     }
-    at(pos: number) {
-        return this._paths[pos];
+    /**
+     * Return a path by index.
+     */
+    at(index: number) {
+        return this._paths[index];
     }
+    /**
+     * Return the number of paths.
+     */
     count() {
         return this._paths.length;
-    };
+    }
+    /**
+     * Extend this Paths instance, with args, if any.
+     */
     get(...args: any[]) {
         var overrides = Paths._convertArgs(args);
         if (overrides.length > 0)
             return new Paths(this._resolve, _.union(overrides, this._paths));
         return this;
-    };
+    }
+    /**
+     * Clears this Paths instance.
+     */
     clear() {
         this._paths = [];
-    };
+    }
+    /**
+     * Add args to this Paths.
+     */
     add(...args: any[]) {
         var add = Paths._convertArgs(args);
         if (add.length)
             this._paths = _.union(add, this._paths);
-    };
+    }
+    /**
+     * Check whether or not args are contained by Paths.
+     */
     has(...args: any[]) {
         try {
             var find = Paths._convertArgs(args);
@@ -60,20 +78,30 @@ class Paths {
                 throw e;
         }
         return false;
-    };
+    }
+    /**
+     * Remove args from paths.
+     */
     remove(...args: any[]) {
         var remove = Paths._convertArgs(args);
         if (remove.length > 0)
             this._paths = _.difference(this._paths, remove);
     }
+    /**
+     * Clone this Paths.
+     */
     clone() {
-        var _paths = new Paths();
-        _paths._paths = this._paths;
-        return _paths;
+        return new Paths(this._resolve, this._paths);
     }
+    /**
+     * Iterate over the paths.
+     */
     forEach(iterator: (path: string) => void) {
         this._paths.forEach(iterator);
     }
+    /**
+     * Asynchroniously resolve a file within these Paths.
+     */
     resolveAsync(resolver: string|Function, callback: (err: Error, path?: string) => void, _paths?: Paths, lookDeep = false) {
         if (_paths)
             _paths = this.get(_paths);
@@ -130,6 +158,9 @@ class Paths {
         } else
             lookIn(_paths, callback);
     };
+    /**
+     * Resolve a file within these Paths.
+     */
     resolve(resolver: string|Function, _paths?: Paths, lookDeep = false) {
         if (_paths)
             _paths = this.get(_paths);
@@ -192,7 +223,7 @@ class Paths {
         const json = JSON.stringify(this._paths);
         return `Paths<${json.substring(1, json.length-1)}>`;
     };
-    static wrap = function (other, ...more: any[]) {
+    static wrap(other: any, ...more: any[]) {
         if (other instanceof Paths && !more.length)
             return other;
         return new Paths(Array.prototype.slice.call(arguments, 0));

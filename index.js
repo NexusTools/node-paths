@@ -1,4 +1,5 @@
 "use strict";
+/// <reference types="node" />
 var _ = require("lodash");
 var path = require("path");
 var async = require("async");
@@ -25,13 +26,21 @@ var Paths = (function () {
         this._paths = Paths._convertArgs(remain);
         this._resolve = resolve || _.identity;
     }
-    Paths.prototype.at = function (pos) {
-        return this._paths[pos];
+    /**
+     * Return a path by index.
+     */
+    Paths.prototype.at = function (index) {
+        return this._paths[index];
     };
+    /**
+     * Return the number of paths.
+     */
     Paths.prototype.count = function () {
         return this._paths.length;
     };
-    ;
+    /**
+     * Extend this Paths instance, with args, if any.
+     */
     Paths.prototype.get = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -42,11 +51,15 @@ var Paths = (function () {
             return new Paths(this._resolve, _.union(overrides, this._paths));
         return this;
     };
-    ;
+    /**
+     * Clears this Paths instance.
+     */
     Paths.prototype.clear = function () {
         this._paths = [];
     };
-    ;
+    /**
+     * Add args to this Paths.
+     */
     Paths.prototype.add = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -56,7 +69,9 @@ var Paths = (function () {
         if (add.length)
             this._paths = _.union(add, this._paths);
     };
-    ;
+    /**
+     * Check whether or not args are contained by Paths.
+     */
     Paths.prototype.has = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -79,7 +94,9 @@ var Paths = (function () {
         }
         return false;
     };
-    ;
+    /**
+     * Remove args from paths.
+     */
     Paths.prototype.remove = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -89,14 +106,21 @@ var Paths = (function () {
         if (remove.length > 0)
             this._paths = _.difference(this._paths, remove);
     };
+    /**
+     * Clone this Paths.
+     */
     Paths.prototype.clone = function () {
-        var _paths = new Paths();
-        _paths._paths = this._paths;
-        return _paths;
+        return new Paths(this._resolve, this._paths);
     };
+    /**
+     * Iterate over the paths.
+     */
     Paths.prototype.forEach = function (iterator) {
         this._paths.forEach(iterator);
     };
+    /**
+     * Asynchroniously resolve a file within these Paths.
+     */
     Paths.prototype.resolveAsync = function (resolver, callback, _paths, lookDeep) {
         if (lookDeep === void 0) { lookDeep = false; }
         if (_paths)
@@ -125,7 +149,7 @@ var Paths = (function () {
                         return cb(err);
                     fs.stat(resolved, function (err) {
                         if (err)
-                            return cb();
+                            return cb(); // next
                         callback(null, resolved);
                     });
                 });
@@ -157,6 +181,9 @@ var Paths = (function () {
             lookIn(_paths, callback);
     };
     ;
+    /**
+     * Resolve a file within these Paths.
+     */
     Paths.prototype.resolve = function (resolver, _paths, lookDeep) {
         if (lookDeep === void 0) { lookDeep = false; }
         if (_paths)
@@ -223,6 +250,15 @@ var Paths = (function () {
         return "Paths<" + json.substring(1, json.length - 1) + ">";
     };
     ;
+    Paths.wrap = function (other) {
+        var more = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            more[_i - 1] = arguments[_i];
+        }
+        if (other instanceof Paths && !more.length)
+            return other;
+        return new Paths(Array.prototype.slice.call(arguments, 0));
+    };
     Paths.isInstance = function (obj) {
         return obj instanceof Paths;
     };
@@ -263,15 +299,6 @@ var Paths = (function () {
     };
     return Paths;
 }());
-Paths.wrap = function (other) {
-    var more = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        more[_i - 1] = arguments[_i];
-    }
-    if (other instanceof Paths && !more.length)
-        return other;
-    return new Paths(Array.prototype.slice.call(arguments, 0));
-};
 Paths.sys = {
     path: Paths,
     node: Paths,
